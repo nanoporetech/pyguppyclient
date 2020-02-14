@@ -1,0 +1,31 @@
+#!/usr/bin/env python3
+
+"""
+Proxy between a Guppy client and server providing a monitor interface
+"""
+
+from zmq.utils.strtypes import asbytes
+from zmq import ROUTER, DEALER, PUB, RCVHWM, SNDHWM
+from zmq.devices.monitoredqueuedevice import MonitoredQueue
+
+
+def main():
+
+    proxy_url = "tcp://*:4444"
+    guppy_url = "tcp://localhost:5555"
+    monitor_url = "tcp://*:7777"
+
+    monitor = MonitoredQueue(ROUTER, DEALER, PUB, asbytes("SEND"), asbytes("RECV"))
+    monitor.bind_in(proxy_url)
+    monitor.connect_out(guppy_url)
+    monitor.bind_mon(monitor_url)
+    monitor.setsockopt_in(RCVHWM, 1)
+    monitor.setsockopt_out(SNDHWM, 1)
+    monitor.start()
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        pass

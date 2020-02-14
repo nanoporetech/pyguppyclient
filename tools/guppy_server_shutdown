@@ -1,0 +1,20 @@
+#!/usr/bin/env python3
+
+"""
+Shutdown utility for guppy_basecaller_server
+Connects to server as a client and sends a simple message "terminate"
+"""
+
+import argparse
+from pyguppyclient import GuppyClientBase
+
+
+def main(args):
+    with GuppyClientBase("dna_r9.4.1_450bps_fast", port=args.port) as client:
+        msg = client.shut_down()
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='shut_down')
+    parser.add_argument('-p', '--port', type=int, default=5555)
+    main(parser.parse_args())

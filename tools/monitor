@@ -1,0 +1,186 @@
+#!/usr/bin/env python3
+
+"""
+Debug monitor
+"""
+
+import json
+import logging
+import argparse
+from time import perf_counter
+from collections import defaultdict
+
+import zmq
+
+from pyguppyclient.ipc import Message # TODO - this import fails, Message doesn't exist
+from pyguppyclient.utils import bases_fmt
+from pyguppyclient.transport import GuppyTransport # TODO - this import fails, transport module doesn't exist
+
+
+class Summary:
+
+    def __init__(self):
+        self.cid = 0
+        self.client = dict()
+        self.start = dict()
+        self.count = defaultdict(int)
+        self.size = defaultdict(int)
+        self.ssize = defaultdict(int)
+        self.rsize = defaultdict(int)
+
+    def log_message(self, message, cid, prefix):
+        self.count[cid] += 1
+        self.size[cid] += message.size
+        if prefix == 'SEND':
+            self.ssize[cid] += message.size
+        else:
+            self.rsize[cid] += message.size
+        if message.command == "connect":
+            self.cid += 1
+            self.client[cid] = self.cid
+            self.start[cid] = perf_counter()
+            print("client", self.cid, "connected")
+        elif message.command == "disconnected":
+            try:
+                duration = perf_counter() - self.start[cid]
+            except KeyError:
+                print("Received invalid cid on disconnect: %s" % cid)
+                return
+            print(
+                "client", self.client[cid], "sent", self.count[cid],
+                "messages in %.3f" % duration, "seconds"
+            )
+            print(" -> sent", bases_fmt(self.ssize[cid], suffix="bytes"))
+            print(" <- recv", bases_fmt(self.rsize[cid], suffix="bytes"))
+            print(" = total", bases_fmt(self.size[cid], suffix="bytes"))
+
+
+def main(args):
+
+    context = zmq.Context()
+    socket = context.socket(zmq.SUB)
+    socket.connect("tcp://localhost:%s" % args.port)
+    socket.setsockopt_string(zmq.SUBSCRIBE, "")
+
+    traces = []
+    summary = Summary()
+    transport = GuppyTransport()
+    sent_reads = defaultdict(set)
+    returned_reads = defaultdict(set)
+    read_tracker = defaultdict(set)
+
+    if args.reads:
+        print("Logging read stats to read_log.txt")
+        logfile = 'read_log.txt'
+        logger = logging.getLogger('pyguppyclient')
+        handler = logging.FileHandler(logfile, 'w')
+        handler.setFormatter(logging.Formatter("%(asctime)-15s %(levelname)s"
+                                               " %(message)s"))
+        logger.addHandler(handler)
+        logger.setLevel(logging.INFO)
+        logger.info("Starting new pyguppy read log")
+
+    try:
+        while True:
+
+            prefix, identity, emptyframe, message = socket.recv_multipart()
+            recv_time = int(round(perf_counter() * 1e6))
+            prefix = prefix.decode()
+
+            message = transport.decode(message)
+
+            summary.log_message(message, identity, prefix)
+
+            if args.dump:
+                logger.info('%s: %s %s' % (prefix, message.command, message))
+
+            if args.events:
+                traces.append(dict(
+                    name=message.command,
+                    ph="B" if prefix == 'SEND' else "E",
+                    pid=summary.client.get(identity, 0),
+                    tid=0,
+                    ts=recv_time,
+                    cat="gnet",
+                ))
+
+
+            if args.stats:
+                pass
+
+            if args.reads and message.protocol >= 9:
+                client_id = int(message.client_id)
+                client_tracker = read_tracker[client_id]
+                if message.message_type == Message.CALLED_READ:
+                    read = message.data[0]
+                    returned_read_tracker = returned_reads[client_id]
+
+                    logger.info('{read_id} sent from server to client '
+                                '{client_id} with tag {tag} '
+                                '({block} / {total_blocks})'
+                                .format(read_id=read.read_id,
+                                client_id=client_id, tag=read.read_tag,
+                                block=read.block_index,
+                                total_blocks=read.total_blocks))
+                    key = (read.read_tag, read.read_id, read.block_index,
+                           read.total_blocks)
+                    returned_read_tracker.add(key)
+                    # If it's the final block remove read_id from the tracker
+                    if int(read.block_index) + 1 == int(read.total_blocks):
+                        try:
+                            client_tracker.remove(read.read_id)
+                        except KeyError:
+                            logger.error('Unexpected read_id recevied '
+                                         'by client {client_id}: {read_id}'
+                                         .format(client_id=client_id,
+                                                 read_id=read.read_id))
+                elif message.message_type == Message.RAW_READ:
+                    sent_read_tracker = sent_reads[client_id]
+                    key = message.data
+                    tag, read_id, block, total_blocks = key
+                    logger.info('{read_id} sent from client {client_id}'
+                                ' with tag {tag} ({block} / {total_blocks})'
+                                .format(read_id=read_id, client_id=client_id,
+                                        tag=tag, block=block,
+                                        total_blocks=total_blocks))
+                    sent_read_tracker.add(key)
+                    client_tracker.add(read_id)
+
+
+    except KeyboardInterrupt:
+        if traces:
+            print("dumping traces to network.events")
+            json.dump(traces, open('network.events', 'w'))
+        if args.reads:
+            print("comparing sent and received reads")
+            for client_id in sent_reads:
+                reads_not_returned = (sent_reads[client_id] -
+                                      returned_reads[client_id])
+                if reads_not_returned:
+                    print("%i reads not returned" % len(reads_not_returned),
+                          "from server to client %i" % client_id,
+                          reads_not_returned)
+                unexpected_reads = (returned_reads[client_id] -
+                                    sent_reads[client_id])
+                if unexpected_reads:
+                    print("%i unexpected reads" % len(unexpected_reads),
+                          "received by client %i" % client_id,
+                          unexpected_reads)
+                if not reads_not_returned and not unexpected_reads:
+                    print('All reads returned sucessfully')
+                client_tracker = read_tracker[client_id]
+                if client_tracker:
+                    print('%i read_ids ' % len(client_tracker),
+                          'not received by client:',
+                          client_tracker)
+
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='pyguppyclient')
+    parser.add_argument("-d", "--dump", default=False, action="store_true")
+    parser.add_argument("-e", "--events", default=False, action="store_true")
+    parser.add_argument("-s", "--stats", default=False, action="store_true")
+    parser.add_argument("-r", "--reads", default=False, action="store_true")
+    parser.add_argument("-p", "--port", type=int, default=7777)
+    main(parser.parse_args())

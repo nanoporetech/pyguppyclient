@@ -1,0 +1,73 @@
+#!/usr/bin/env python3
+
+"""
+Statistics Monitor for Guppy Basecall Server
+"""
+
+import os
+import sys
+import time
+import argparse
+import platform
+from collections import OrderedDict
+from datetime import datetime as dt
+
+from pyguppyclient import GuppyClientBase
+
+
+def main(rate_limit: int, csv_output: bool):
+    """
+    :param rate_limit: Time in seconds between output.
+    :param csv_output: If True will output in CSV form,
+                       if False will output prettily.
+    """
+    client = GuppyClientBase("dna_r9.4.1_450bps_fast")
+
+    while True:
+        res = client.get_statistics()
+        stats = OrderedDict([
+            ("Lifetime reads in", res.LifetimeReadsIn()),
+            ("Lifetime reads out", res.LifetimeReadsOut()),
+            ("Last 5s reads in", res.PeriodReadsIn()),
+            ("Last 5s reads out", res.PeriodReadsOut()),
+        ])
+
+        if csv_output:
+            output_csv(stats)
+        else:
+            output_pretty(stats)
+
+        sys.stdout.flush()
+        time.sleep(rate_limit)
+
+
+def output_pretty(stats: OrderedDict):
+    if platform.system() == "Windows":
+        os.system("cls")
+    else:
+        os.system("clear")
+    pad_to = max(len(k) for k in stats.keys())
+
+    print("Guppy Server Statistics Monitor")
+    print(dt.now())
+    print()
+    for key, value in stats.items():
+        print(" - {:{}} {:>4}".format(key, pad_to, value))
+
+
+def output_csv(stats: OrderedDict):
+    # on the first time this is invoked, print CSV headers
+    if not getattr(output_csv, "_run_flag", False):
+        print("Datetime", *stats.keys(), sep=",")
+        output_csv._run_flag = True
+
+    print(dt.now(), *stats.values(), sep=",")
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--interval", type=int, default=0.1, help="time between updates in seconds")
+    parser.add_argument("--csv", action="store_true", default=False, help="print stats in a CSV format")
+    args = parser.parse_args()
+    try: main(args.interval, args.csv)
+    except KeyboardInterrupt: pass

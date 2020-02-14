@@ -1,0 +1,15 @@
+*~
+*.pyc
+__pycache__/
+venv/
+venv3/
+*.log
+*.fast[aq5]
+*.f[aq]
+sequencing_summary.txt
+dist/
+pyguppyclient.egg-info/
+*.lprof
+.coverage
+.idea
+tests/reads
