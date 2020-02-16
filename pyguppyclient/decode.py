@@ -296,7 +296,7 @@ def format_flipflop_trace(trace_data):
 def format_mod_data(mod_data, alphabet_size):
     scaled_probs = mod_data.ModProbsAsNumpy()
     mod_probs = scaled_probs * (1.0 / 255.0)
-    return mod_probs.reshape(alphabet_size, -1)
+    return mod_probs.reshape(-1, alphabet_size)
 
 
 def format_runlength_trace(trace_data):
