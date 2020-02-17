@@ -13,3 +13,4 @@ pyguppyclient.egg-info/
 .coverage
 .idea
 tests/reads
+build/
