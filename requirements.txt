@@ -1,5 +1,4 @@
-h5py==2.8.0
 pyzmq==17.1.2
-numpy==1.16.4
+numpy>=1.13.3
 flatbuffers==1.11
-ont-fast5-api==3.0.1
+ont-fast5-api>=3.0.1
