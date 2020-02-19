@@ -17,6 +17,8 @@ else:
 with open('requirements.txt') as f:
     requirements = f.read().splitlines()
 
+with open('README.md', encoding='utf-8') as f:
+    long_description = f.read()
 
 setup(
     name=__pkg_name__,
@@ -26,4 +28,6 @@ setup(
     url="https://github.com/nanoporetech/pyguppyclient",
     packages=find_packages(),
     install_requires=requirements,
+    long_description=long_description,
+    long_description_content_type='text/markdown',
 )
