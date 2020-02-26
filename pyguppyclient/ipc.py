@@ -97,6 +97,8 @@ def simple_response(buff):
         if os.environ.get("DEBUG_TRANSPORT"):
             print('<-', "SimpleReplyData  ", "%-23s" % name, cls.Data(), cls.Text(), sep='\t')
 
+        if cls.Type() == SimpleReplyType.INVALID_CONFIG:
+            raise ValueError("Invalid Config")
         if cls.Type() in [SimpleReplyType.BAD_REQUEST, SimpleReplyType.BAD_REPLY]:
             raise Exception(cls.Text().decode())
         if cls.Type() == SimpleReplyType.NONE_PENDING:
