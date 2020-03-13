@@ -1,4 +1,4 @@
-__version__ = '0.0.5'
+__version__ = '0.0.6'
 
 from pyguppyclient.io import *
 from pyguppyclient.caller import Caller
