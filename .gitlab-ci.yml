@@ -29,12 +29,20 @@ cpu:guppy:3.4.1:
 cpu:guppy:3.4.5:
   <<: *test
 
+cpu:guppy:3.5.2:
+  <<: *test
+
 gpu:guppy:3.4.1:
   <<: *test
   variables:
     GUPPY_ARGS: "-x cuda:0"
 
 gpu:guppy:3.4.5:
+  <<: *test
+  variables:
+    GUPPY_ARGS: "-x cuda:0"
+
+gpu:guppy:3.5.2:
   <<: *test
   variables:
     GUPPY_ARGS: "-x cuda:0"
