@@ -32,6 +32,9 @@ cpu:guppy:3.4.5:
 cpu:guppy:3.5.2:
   <<: *test
 
+cpu:guppy:3.6.0:
+  <<: *test
+
 gpu:guppy:3.4.1:
   <<: *test
   variables:
@@ -43,6 +46,11 @@ gpu:guppy:3.4.5:
     GUPPY_ARGS: "-x cuda:0"
 
 gpu:guppy:3.5.2:
+  <<: *test
+  variables:
+    GUPPY_ARGS: "-x cuda:0"
+
+gpu:guppy:3.6.0:
   <<: *test
   variables:
     GUPPY_ARGS: "-x cuda:0"
