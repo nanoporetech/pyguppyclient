@@ -90,6 +90,12 @@ def simple_request(request_type, client_id=0, text=None, data=None):
 def simple_response(buff):
     req = MessageData.MessageData.GetRootAsMessageData(buff, 0)
 
+    if req.Version().MajorVersion() != PROTO_VERSION[0]:
+        raise Exception("Server IPC major version {} does not match "
+                        "pyguppyclient IPC major version {} -- cannot decode "
+                        "message.".format(req.Version().MajorVersion(),
+                                          PROTO_VERSION[0]))
+
     if req.ContentType() == Content.SimpleReplyData:
         cls = SimpleReplyData.SimpleReplyData()
         cls.Init(req.Content().Bytes, req.Content().Pos)
@@ -100,7 +106,7 @@ def simple_response(buff):
         if cls.Type() == SimpleReplyType.INVALID_CONFIG:
             raise ValueError("Invalid Config")
         if cls.Type() == SimpleReplyType.BAD_REQUEST:
-            raise Exception("Bad request")
+            raise Exception("Bad request: ", cls.Text())
         if cls.Type() == SimpleReplyType.BAD_REPLY:
             raise Exception(cls.Text().decode())
         if cls.Type() == SimpleReplyType.NONE_PENDING:
