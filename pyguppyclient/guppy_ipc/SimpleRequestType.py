@@ -11,4 +11,9 @@ class SimpleRequestType(object):
     GET_CONFIGS = 5
     GET_FIRST_CALLED_BLOCK = 6
     GET_NEXT_CALLED_BLOCK = 7
+    LOAD_INDEX = 8
+    GET_INDICES = 9
+    LOAD_BED = 10
+    GET_BEDS = 11
+    GET_BARCODE_KITS = 12
 

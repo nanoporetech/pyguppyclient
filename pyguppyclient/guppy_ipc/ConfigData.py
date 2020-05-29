@@ -18,7 +18,7 @@ class ConfigData(object):
 
     @classmethod
     def ConfigDataBufferHasIdentifier(cls, buf, offset, size_prefixed=False):
-        return flatbuffers.util.BufferHasIdentifier(buf, offset, b"\x30\x30\x30\x31", size_prefixed=size_prefixed)
+        return flatbuffers.util.BufferHasIdentifier(buf, offset, b"\x30\x30\x30\x32", size_prefixed=size_prefixed)
 
     # ConfigData
     def Init(self, buf, pos):
@@ -49,7 +49,83 @@ class ConfigData(object):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(4))
         return o == 0
 
-def ConfigDataStart(builder): builder.StartObject(1)
+    # ConfigData
+    def AlignIndices(self, j):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(6))
+        if o != 0:
+            x = self._tab.Vector(o)
+            x += flatbuffers.number_types.UOffsetTFlags.py_type(j) * 4
+            x = self._tab.Indirect(x)
+            from pyguppyclient.guppy_ipc.AlignmentIndex import AlignmentIndex
+            obj = AlignmentIndex()
+            obj.Init(self._tab.Bytes, x)
+            return obj
+        return None
+
+    # ConfigData
+    def AlignIndicesLength(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(6))
+        if o != 0:
+            return self._tab.VectorLen(o)
+        return 0
+
+    # ConfigData
+    def AlignIndicesIsNone(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(6))
+        return o == 0
+
+    # ConfigData
+    def BedFiles(self, j):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(8))
+        if o != 0:
+            a = self._tab.Vector(o)
+            return self._tab.String(a + flatbuffers.number_types.UOffsetTFlags.py_type(j * 4))
+        return ""
+
+    # ConfigData
+    def BedFilesLength(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(8))
+        if o != 0:
+            return self._tab.VectorLen(o)
+        return 0
+
+    # ConfigData
+    def BedFilesIsNone(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(8))
+        return o == 0
+
+    # ConfigData
+    def BarcodeKits(self, j):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(10))
+        if o != 0:
+            x = self._tab.Vector(o)
+            x += flatbuffers.number_types.UOffsetTFlags.py_type(j) * 4
+            x = self._tab.Indirect(x)
+            from pyguppyclient.guppy_ipc.BarcodeKitDefinition import BarcodeKitDefinition
+            obj = BarcodeKitDefinition()
+            obj.Init(self._tab.Bytes, x)
+            return obj
+        return None
+
+    # ConfigData
+    def BarcodeKitsLength(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(10))
+        if o != 0:
+            return self._tab.VectorLen(o)
+        return 0
+
+    # ConfigData
+    def BarcodeKitsIsNone(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(10))
+        return o == 0
+
+def ConfigDataStart(builder): builder.StartObject(4)
 def ConfigDataAddConfigs(builder, configs): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(configs), 0)
 def ConfigDataStartConfigsVector(builder, numElems): return builder.StartVector(4, numElems, 4)
+def ConfigDataAddAlignIndices(builder, alignIndices): builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(alignIndices), 0)
+def ConfigDataStartAlignIndicesVector(builder, numElems): return builder.StartVector(4, numElems, 4)
+def ConfigDataAddBedFiles(builder, bedFiles): builder.PrependUOffsetTRelativeSlot(2, flatbuffers.number_types.UOffsetTFlags.py_type(bedFiles), 0)
+def ConfigDataStartBedFilesVector(builder, numElems): return builder.StartVector(4, numElems, 4)
+def ConfigDataAddBarcodeKits(builder, barcodeKits): builder.PrependUOffsetTRelativeSlot(3, flatbuffers.number_types.UOffsetTFlags.py_type(barcodeKits), 0)
+def ConfigDataStartBarcodeKitsVector(builder, numElems): return builder.StartVector(4, numElems, 4)
 def ConfigDataEnd(builder): return builder.EndObject()
