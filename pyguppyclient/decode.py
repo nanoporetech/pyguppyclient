@@ -120,6 +120,105 @@ class CalledReadData:
         return self
 
 
+def pcl_called_read(pcl_read):
+    """
+    Converts a read returned by pyguppy_client_lib into a CalledRead
+    """
+    datasets = pcl_read['datasets']
+    metadata = pcl_read['metadata']
+
+    seq = datasets['sequence']
+    qual = datasets['qstring']
+    events = int(metadata['duration'] / metadata['model_stride'])
+    seqlen = metadata['sequence_length']
+    state_size = metadata['state_size']
+    model_type = metadata['basecall_type']
+    trimmed_samples = metadata['trimmed_samples']
+    model_stride = metadata['model_stride']
+    qscore = metadata['mean_qscore']
+
+    state = datasets.get('state_data')
+    move = datasets.get('movement')
+
+    trace = None
+    weight = None
+    if 'flipflop_trace' in datasets:
+        trace = datasets['flipflop_trace'] * (1.0 / 255.0)
+    elif 'rle_runlength' in datasets:
+        trace = {
+            'base': datasets.get('rle_base'),
+            'shape': datasets.get('rle_shape'),
+            'scale': datasets.get('rle_scale'),
+            'weight': datasets.get('rle_weight'),
+            'index': datasets.get('rle_index'),
+            'runlength': datasets.get('rle_runlength'),
+        }
+
+    mod_probs = datasets.get('base_mod_probs')
+    mod_alpha = None
+    long_names = None
+    if mod_probs:
+        mod_probs = mod_probs * (1.0 / 255.0)
+        mod_alpha = metadata.get('base_mod_alphabet')
+        long_names = metadata.get('base_mod_long_names')
+
+    barcode = metadata.get('barcode_front_id')
+    if barcode:
+        barcode = {
+            'trim_front': metadata.get('barcode_trim_front'),
+            'trim_rear': metadata.get('barcode_trim_rear'),
+            'id': metadata.get('barcode_full_arrangement'),
+            'normalized_id': metadata.get('barcode_arrangement'),
+            'kit': metadata.get('barcode_kit'),
+            'variant': metadata.get('barcode_variant'),
+            'score': metadata.get('barcode_score'),
+        }
+        if metadata['barcode_front_id']:
+            barcode['front'] = {
+                'id': metadata.get('barcode_front_id'),
+                'barcode_sequence': metadata.get('barcode_front_refseq'),
+                'aligned_sequence': metadata.get('barcode_front_foundseq'),
+                'score': metadata.get('barcode_front_score'),
+                'begin': metadata.get('barcode_front_begin_index'),
+            }
+        if metadata['barcode_rear_id']:
+            barcode['rear'] = {
+                'id': metadata.get('barcode_rear_id'),
+                'barcode_sequence': metadata.get('barcode_rear_refseq'),
+                'aligned_sequence': metadata.get('barcode_rear_foundseq'),
+                'score': metadata.get('barcode_rear_score'),
+                'begin': metadata.get('barcode_rear_end_index'),
+            }
+        if metadata['barcode_mid_front_id']:
+            barcode['mid_front'] = {
+                'id': metadata.get('barcode_mid_front_id'),
+                'score': metadata.get('barcode_mid_front_score'),
+                'end': metadata.get('barcode_mid_front_end_index'),
+            }
+        if metadata['barcode_mid_rear_id']:
+            barcode['mid_rear'] = {
+                'id': metadata.get('barcode_mid_rear_id'),
+                'score': metadata.get('barcode_mid_rear_score'),
+                'end': metadata.get('barcode_mid_rear_end_index'),
+            }
+
+    scaling = {
+        'median': metadata.get('median'),
+        'med_abs_dev': metadata.get('med_abs_dev'),
+        'pt_median': metadata.get('pt_median'),
+        'ptsd': metadata.get('ptsd'),
+        'adapter_max': metadata.get('adapter_max'),
+        'pt_detect_success': metadata.get('pt_detect_success'),
+    }
+
+    complete = True
+
+    return CalledReadData(seq, qual, events, seqlen, state_size,  model_type,
+                      trimmed_samples, model_stride, qscore, state, move,
+                      weight, trace, mod_alpha, mod_probs,
+                      long_names, barcode, scaling, complete)
+
+
 def set_file_identifier(buff):
     """
     https://github.com/google/flatbuffers/issues/4814
