@@ -2,3 +2,4 @@ pyzmq==17.1.2
 numpy>=1.13.3
 flatbuffers==1.11
 ont-fast5-api>=3.0.1
+ont-pyguppy-client-lib==4.0.8
