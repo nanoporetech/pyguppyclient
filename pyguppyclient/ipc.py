@@ -2,7 +2,6 @@ import os
 
 from flatbuffers import Builder
 
-from pyguppyclient.decode import called_read_block
 from pyguppyclient.decode import PROTO_VERSION, set_file_identifier
 
 from pyguppyclient.guppy_ipc.Content import Content

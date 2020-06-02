@@ -16,7 +16,7 @@ from zmq import Context, REQ, LINGER, RCVTIMEO
 from pyguppyclient.utils import parse_config
 from pyguppyclient.ipc import simple_request, simple_response
 from pyguppyclient.ipc import SimpleRequestType, SimpleReplyType
-from pyguppyclient.decode import Config, raw_read_message, PROTO_VERSION, pcl_called_read
+from pyguppyclient.decode import Config, PROTO_VERSION, pcl_called_read
 from pyguppy_client_lib.client_lib import GuppyClient as PCLClient
 
 
