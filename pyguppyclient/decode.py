@@ -162,8 +162,8 @@ def pcl_called_read(pcl_read):
         mod_alpha = metadata.get('base_mod_alphabet')
         long_names = metadata.get('base_mod_long_names')
 
-    barcode = metadata.get('barcode_front_id')
-    if barcode:
+    barcode = None
+    if 'barcode_front_id' in metadata:
         barcode = {
             'trim_front': metadata.get('barcode_trim_front'),
             'trim_rear': metadata.get('barcode_trim_rear'),

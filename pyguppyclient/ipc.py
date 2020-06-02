@@ -105,7 +105,7 @@ def simple_response(buff):
         if cls.Type() == SimpleReplyType.INVALID_CONFIG:
             raise ValueError("Invalid Config")
         if cls.Type() == SimpleReplyType.BAD_REQUEST:
-            raise Exception("Bad request: ", cls.Text())
+            raise Exception("Bad request:", cls.Text())
         if cls.Type() == SimpleReplyType.BAD_REPLY:
             raise Exception(cls.Text().decode())
         if cls.Type() == SimpleReplyType.NONE_PENDING:
