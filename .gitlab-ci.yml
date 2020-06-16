@@ -23,10 +23,10 @@ variables:
   tags:
     - nvidia-docker
 
-cpu:guppy:4.0.8:
+cpu:guppy:4.0.11:
   <<: *test
 
-gpu:guppy:4.0.8:
+gpu:guppy:4.0.11:
   <<: *test
   variables:
     GUPPY_ARGS: "-x cuda:0"
