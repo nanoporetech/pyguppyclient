@@ -13,7 +13,7 @@ variables:
     - apt-get update > /dev/null
     - apt-get install -y python3-pip > /dev/null
     - apt-get install -y --no-install-recommends ./guppy.deb > /dev/null
-    - python3 -m pip install --extra-index-url=https://artifactory.oxfordnanolabs.local/artifactory/api/pypi/ONT-Pypi/simple --trusted-host=artifactory.oxfordnanolabs.local -q -r requirements.txt -r development.txt
+    - python3 -m pip install ${PIP_OPTIONS} -q -r requirements.txt -r development.txt
     - python3 setup.py develop
   script:
     - guppy_basecall_server -p 5555 -c ${CONFIG}.cfg --post_out -l /tmp/log ${GUPPY_ARGS} &
