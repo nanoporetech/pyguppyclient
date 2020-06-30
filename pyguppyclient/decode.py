@@ -133,7 +133,7 @@ def pcl_called_read(pcl_read):
     seqlen = metadata['sequence_length']
     state_size = metadata['state_size']
     model_type = metadata['basecall_type']
-    trimmed_samples = metadata['trimmed_samples']
+    trimmed_samples = metadata['duration'] - metadata['trimmed_samples']
     model_stride = metadata['model_stride']
     qscore = metadata['mean_qscore']
 
