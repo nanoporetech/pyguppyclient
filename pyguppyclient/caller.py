@@ -86,7 +86,7 @@ class Caller:
 
                 done += 1
                 read, called = res
-                samples += read.total_samples - called.trimmed_samples
+                samples += called.trimmed_samples
 
                 if self.callback:
                     self.callback(read, called, self.lock)

@@ -14,7 +14,7 @@ import pyguppyclient.guppy_ipc.RunlengthTraceData as RunlengthTraceData
 from pyguppyclient.guppy_ipc.ProtocolVersion import CreateProtocolVersion
 
 
-PROTO_VERSION = (1, 0, 0)
+PROTO_VERSION = (2, 1, 0)
 
 
 class Config:
@@ -120,248 +120,109 @@ class CalledReadData:
         return self
 
 
+def pcl_called_read(pcl_read):
+    """
+    Converts a read returned by pyguppy_client_lib into a CalledRead
+    """
+    datasets = pcl_read['datasets']
+    metadata = pcl_read['metadata']
+
+    seq = datasets['sequence']
+    qual = datasets['qstring']
+    events = int(metadata['duration'] / metadata['model_stride'])
+    seqlen = metadata['sequence_length']
+    state_size = metadata['state_size']
+    model_type = metadata['basecall_type']
+    trimmed_samples = metadata['duration'] - metadata['trimmed_samples']
+    model_stride = metadata['model_stride']
+    qscore = metadata['mean_qscore']
+
+    state = datasets.get('state_data')
+    move = datasets.get('movement')
+
+    trace = None
+    weight = None
+    if 'flipflop_trace' in datasets:
+        trace = datasets['flipflop_trace'] * (1.0 / 255.0)
+    elif 'rle_runlength' in datasets:
+        trace = {
+            'base': datasets.get('rle_base'),
+            'shape': datasets.get('rle_shape'),
+            'scale': datasets.get('rle_scale'),
+            'weight': datasets.get('rle_weight'),
+            'index': datasets.get('rle_index'),
+            'runlength': datasets.get('rle_runlength'),
+        }
+
+    mod_probs = datasets.get('base_mod_probs')
+    mod_alpha = None
+    long_names = None
+    if mod_probs:
+        mod_probs = mod_probs * (1.0 / 255.0)
+        mod_alpha = metadata.get('base_mod_alphabet')
+        long_names = metadata.get('base_mod_long_names')
+
+    barcode = None
+    if 'barcode_front_id' in metadata:
+        barcode = {
+            'trim_front': metadata.get('barcode_trim_front'),
+            'trim_rear': metadata.get('barcode_trim_rear'),
+            'id': metadata.get('barcode_full_arrangement'),
+            'normalized_id': metadata.get('barcode_arrangement'),
+            'kit': metadata.get('barcode_kit'),
+            'variant': metadata.get('barcode_variant'),
+            'score': metadata.get('barcode_score'),
+        }
+        if metadata['barcode_front_id']:
+            barcode['front'] = {
+                'id': metadata.get('barcode_front_id'),
+                'barcode_sequence': metadata.get('barcode_front_refseq'),
+                'aligned_sequence': metadata.get('barcode_front_foundseq'),
+                'score': metadata.get('barcode_front_score'),
+                'begin': metadata.get('barcode_front_begin_index'),
+            }
+        if metadata['barcode_rear_id']:
+            barcode['rear'] = {
+                'id': metadata.get('barcode_rear_id'),
+                'barcode_sequence': metadata.get('barcode_rear_refseq'),
+                'aligned_sequence': metadata.get('barcode_rear_foundseq'),
+                'score': metadata.get('barcode_rear_score'),
+                'begin': metadata.get('barcode_rear_end_index'),
+            }
+        if metadata['barcode_mid_front_id']:
+            barcode['mid_front'] = {
+                'id': metadata.get('barcode_mid_front_id'),
+                'score': metadata.get('barcode_mid_front_score'),
+                'end': metadata.get('barcode_mid_front_end_index'),
+            }
+        if metadata['barcode_mid_rear_id']:
+            barcode['mid_rear'] = {
+                'id': metadata.get('barcode_mid_rear_id'),
+                'score': metadata.get('barcode_mid_rear_score'),
+                'end': metadata.get('barcode_mid_rear_end_index'),
+            }
+
+    scaling = {
+        'median': metadata.get('median'),
+        'med_abs_dev': metadata.get('med_abs_dev'),
+        'pt_median': metadata.get('pt_median'),
+        'ptsd': metadata.get('ptsd'),
+        'adapter_max': metadata.get('adapter_max'),
+        'pt_detect_success': metadata.get('pt_detect_success'),
+    }
+
+    complete = True
+
+    return CalledReadData(seq, qual, events, seqlen, state_size,  model_type,
+                      trimmed_samples, model_stride, qscore, state, move,
+                      weight, trace, mod_alpha, mod_probs,
+                      long_names, barcode, scaling, complete)
+
+
 def set_file_identifier(buff):
     """
     https://github.com/google/flatbuffers/issues/4814
     """
     buff[4:8] = b'%04x' % PROTO_VERSION[0]
     return buff
-
-
-def raw_read_message(client_id, read_tag, read_id, daq_offset, daq_scaling, raw):
-    builder = Builder(raw.size * 2 + 200)
-    read_id_offset = builder.CreateString(read_id)
-    raw_offset = builder.CreateNumpyVector(raw)
-
-    # Create the ReadBlockData object.
-    ReadBlockData.ReadBlockDataStart(builder)
-    ReadBlockData.ReadBlockDataAddType(
-        builder,
-        ReadBlockType.ReadBlockType.PASS_FIRST_RAW_BLOCK
-    )
-    ReadBlockData.ReadBlockDataAddReadTag(
-        builder,
-        read_tag
-    )
-    ReadBlockData.ReadBlockDataAddBlockIndex(
-        builder,
-        0
-    )
-    ReadBlockData.ReadBlockDataAddTotalBlocks(
-        builder,
-        1
-    )
-    ReadBlockData.ReadBlockDataAddTotalSamples(
-        builder,
-        raw.size
-    )
-    ReadBlockData.ReadBlockDataAddDaqOffset(
-        builder,
-        daq_offset
-    )
-    ReadBlockData.ReadBlockDataAddDaqScaling(
-        builder,
-        daq_scaling
-    )
-    ReadBlockData.ReadBlockDataAddReadId(
-        builder,
-        read_id_offset
-    )
-    ReadBlockData.ReadBlockDataAddRawData(
-        builder,
-        raw_offset
-    )
-
-    content_offset = ReadBlockData.ReadBlockDataEnd(builder)
-
-    # Create Message Data
-    MessageData.MessageDataStart(builder)
-
-    MessageData.MessageDataAddVersion(
-        builder,
-        CreateProtocolVersion(builder, *PROTO_VERSION)
-    )
-
-    MessageData.MessageDataAddSenderId(
-        builder,
-        client_id
-    )
-
-    MessageData.MessageDataAddContentType(
-        builder,
-        Content.ReadBlockData
-    )
-
-    MessageData.MessageDataAddContent(
-        builder,
-        content_offset
-    )
-
-    end = MessageData.MessageDataEnd(builder)
-    builder.Finish(end)
-
-    return set_file_identifier(builder.Output())
-
-
-def called_read_block(res):
-
-    if res.ContentType() != Content.ReadBlockData:
-        raise Exception("Unhandled Response %s" % res.ContentType())
-
-    read_block = ReadBlockData.ReadBlockData()
-    read_block.Init(res.Content().Bytes, res.Content().Pos)
-
-    read_obj = ReadData([], read_block.ReadId().decode())
-    read_obj.read_tag = read_block.ReadTag()
-    read_obj.block_index = read_block.BlockIndex()
-    read_obj.total_blocks = read_block.TotalBlocks()
-    read_obj.total_samples = read_block.TotalSamples()
-    read_obj.daq_offset = read_block.DaqOffset()
-    read_obj.daq_scaling = read_block.DaqScaling()
-    read_obj.signal = read_block.RawDataAsNumpy()
-
-    called_read = None
-    called_data = read_block.CalledData()
-
-    if called_data is not None:
-
-        called_read = CalledReadData(
-            called_data.Sequence().decode(),
-            called_data.Qstring().decode(),
-            called_data.TotalEvents(),
-            called_data.TotalSequenceLength(),
-            called_data.StateSize(),
-            called_data.ModelType().decode(),
-            called_data.TrimmedSamples(),
-            called_data.ModelStride(),
-            called_data.MeanQscore(),
-        )
-
-        if called_data.StateDataLength() > 0:
-            state_data = called_data.StateDataAsNumpy()
-            state_size = called_data.StateSize()
-            called_read.state = format_state_data(state_data, state_size)
-
-        trace_data = called_data.TraceResults()
-
-        if trace_data is not None:
-            if called_data.TraceResultsType() == TraceData.TraceData.FlipflopTraceData:
-                trace_obj = FlipflopTraceData.FlipflopTraceData()
-                trace_obj.Init(called_data.TraceResults().Bytes, called_data.TraceResults().Pos)
-                called_read.move, called_read.trace = format_flipflop_trace(trace_obj)
-            if called_data.TraceResultsType() == TraceData.TraceData.RunlengthTraceData:
-                trace_obj = RunlengthTraceData.RunlengthTraceData()
-                trace_obj.Init(called_data.TraceResults().Bytes, called_data.TraceResults().Pos)
-                called_read.trace = format_runlength_trace(trace_obj)
-
-        barcode_data = called_data.BarcodeResults()
-        if barcode_data is not None:
-            called_read.barcode = format_barcode_data(barcode_data)
-
-        mod_data = called_data.BaseModResults()
-        if mod_data is not None:
-            called_read.mod_alphabet = mod_data.Alphabet().decode()
-            called_read.mod_long_names = mod_data.LongNames().decode().split(' ')
-            called_read.mod_probs = format_mod_data(mod_data, len(called_read.mod_alphabet))
-
-        scaling_data = called_data.ScalingResults()
-        if scaling_data is not None:
-            called_read.scaling = format_scaling_data(scaling_data)
-        called_read.complete = (read_block.TotalBlocks() == read_block.BlockIndex() + 1)
-
-    return read_obj, called_read
-
-
-def format_state_data(state_data, state_size):
-    n = int(state_data.size / state_size)
-    return state_data.reshape(n, state_size)
-
-
-def format_flipflop_trace(trace_data):
-    if trace_data.MoveDataLength() > 0:
-        move = trace_data.MoveDataAsNumpy()
-    else:
-        move = None
-
-    if trace_data.TraceDataLength() > 0:
-        scaled_trace = trace_data.TraceDataAsNumpy()
-        trace = scaled_trace * (1.0 / 255.0)
-        n = int(trace.size / 8)
-        trace = trace.reshape(n, 8)
-    else:
-        trace = None
-    return move, trace
-
-
-def format_mod_data(mod_data, alphabet_size):
-    scaled_probs = mod_data.ModProbsAsNumpy()
-    mod_probs = scaled_probs * (1.0 / 255.0)
-    return mod_probs.reshape(-1, alphabet_size)
-
-
-def format_runlength_trace(trace_data):
-    return {
-        'base': trace_data.BaseAsNumpy(),
-        'shape': trace_data.ShapeAsNumpy(),
-        'scale': trace_data.ScaleAsNumpy(),
-        'weight': trace_data.WeightAsNumpy(),
-        'index': trace_data.IndexAsNumpy(),
-        'runlength': trace_data.RunlengthAsNumpy()
-    }
-
-
-def format_barcode_data(barcode_data):
-    barcode_results = {
-        'trim_front': barcode_data.BarcodeTrimFront(),
-        'trim_rear': barcode_data.BarcodeTrimRear(),
-        'id': barcode_data.Id(),
-        'normalized_id': barcode_data.NormalisedId(),
-        'kit': barcode_data.Kit(),
-        'variant': barcode_data.Variant(),
-        'score': barcode_data.Score()
-    }
-    front = barcode_data.Front()
-    if front:
-        barcode_results['front'] = {
-            'id': front.Id(),
-            'barcode_sequence': front.BarcodeSequence(),
-            'aligned_sequence': front.AlignedSequence(),
-            'score': front.Score(),
-            'begin': front.Begin()
-        }
-    back = barcode_data.Back()
-    if back:
-        barcode_results['back'] = {
-            'id': back.Id(),
-            'barcode_sequence': back.BarcodeSequence(),
-            'aligned_sequence': back.AlignedSequence(),
-            'score': back.Score(),
-            'begin': back.Begin()
-        }
-    mid_front = barcode_data.MidFront()
-    if mid_front:
-        barcode_results['mid_front'] = {
-            'id': mid_front.Id(),
-            'score': mid_front.Score(),
-            'end': mid_front.End()
-        }
-    mid_rear = barcode_data.MidRear()
-    if mid_rear:
-        barcode_results['mid_rear'] = {
-            'id': mid_rear.Id(),
-            'score': mid_rear.Score(),
-            'end': mid_rear.End()
-        }
-    return barcode_results
-
-
-
-def format_scaling_data(scaling_data):
-    return {
-        'median': scaling_data.Median(),
-        'med_abs_dev': scaling_data.MedAbsDev(),
-        'pt_median': scaling_data.PtMedian(),
-        'ptsd': scaling_data.Ptsd(),
-        'adapter_max': scaling_data.AdapterMax(),
-        'pt_detect_success': scaling_data.PtDetectSuccess()
-    }
+            

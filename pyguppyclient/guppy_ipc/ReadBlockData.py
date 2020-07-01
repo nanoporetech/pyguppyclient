@@ -18,7 +18,7 @@ class ReadBlockData(object):
 
     @classmethod
     def ReadBlockDataBufferHasIdentifier(cls, buf, offset, size_prefixed=False):
-        return flatbuffers.util.BufferHasIdentifier(buf, offset, b"\x30\x30\x30\x31", size_prefixed=size_prefixed)
+        return flatbuffers.util.BufferHasIdentifier(buf, offset, b"\x30\x30\x30\x32", size_prefixed=size_prefixed)
 
     # ReadBlockData
     def Init(self, buf, pos):
@@ -118,7 +118,18 @@ class ReadBlockData(object):
             return obj
         return None
 
-def ReadBlockDataStart(builder): builder.StartObject(10)
+    # ReadBlockData
+    def ScalingOverride(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(24))
+        if o != 0:
+            x = self._tab.Indirect(o + self._tab.Pos)
+            from pyguppyclient.guppy_ipc.ScalingOverrideData import ScalingOverrideData
+            obj = ScalingOverrideData()
+            obj.Init(self._tab.Bytes, x)
+            return obj
+        return None
+
+def ReadBlockDataStart(builder): builder.StartObject(11)
 def ReadBlockDataAddType(builder, type): builder.PrependUint32Slot(0, type, 0)
 def ReadBlockDataAddReadTag(builder, readTag): builder.PrependUint32Slot(1, readTag, 0)
 def ReadBlockDataAddBlockIndex(builder, blockIndex): builder.PrependUint32Slot(2, blockIndex, 0)
@@ -130,4 +141,5 @@ def ReadBlockDataAddReadId(builder, readId): builder.PrependUOffsetTRelativeSlot
 def ReadBlockDataAddRawData(builder, rawData): builder.PrependUOffsetTRelativeSlot(8, flatbuffers.number_types.UOffsetTFlags.py_type(rawData), 0)
 def ReadBlockDataStartRawDataVector(builder, numElems): return builder.StartVector(2, numElems, 2)
 def ReadBlockDataAddCalledData(builder, calledData): builder.PrependUOffsetTRelativeSlot(9, flatbuffers.number_types.UOffsetTFlags.py_type(calledData), 0)
+def ReadBlockDataAddScalingOverride(builder, scalingOverride): builder.PrependUOffsetTRelativeSlot(10, flatbuffers.number_types.UOffsetTFlags.py_type(scalingOverride), 0)
 def ReadBlockDataEnd(builder): return builder.EndObject()

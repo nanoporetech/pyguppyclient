@@ -18,7 +18,7 @@ class CalledBlockData(object):
 
     @classmethod
     def CalledBlockDataBufferHasIdentifier(cls, buf, offset, size_prefixed=False):
-        return flatbuffers.util.BufferHasIdentifier(buf, offset, b"\x30\x30\x30\x31", size_prefixed=size_prefixed)
+        return flatbuffers.util.BufferHasIdentifier(buf, offset, b"\x30\x30\x30\x32", size_prefixed=size_prefixed)
 
     # CalledBlockData
     def Init(self, buf, pos):
@@ -220,7 +220,32 @@ class CalledBlockData(object):
             return obj
         return None
 
-def CalledBlockDataStart(builder): builder.StartObject(23)
+    # CalledBlockData
+    def AlignmentResults(self, j):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(50))
+        if o != 0:
+            x = self._tab.Vector(o)
+            x += flatbuffers.number_types.UOffsetTFlags.py_type(j) * 4
+            x = self._tab.Indirect(x)
+            from pyguppyclient.guppy_ipc.AlignmentResults import AlignmentResults
+            obj = AlignmentResults()
+            obj.Init(self._tab.Bytes, x)
+            return obj
+        return None
+
+    # CalledBlockData
+    def AlignmentResultsLength(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(50))
+        if o != 0:
+            return self._tab.VectorLen(o)
+        return 0
+
+    # CalledBlockData
+    def AlignmentResultsIsNone(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(50))
+        return o == 0
+
+def CalledBlockDataStart(builder): builder.StartObject(24)
 def CalledBlockDataAddTotalEvents(builder, totalEvents): builder.PrependUint32Slot(0, totalEvents, 0)
 def CalledBlockDataAddBlockEvents(builder, blockEvents): builder.PrependUint32Slot(1, blockEvents, 0)
 def CalledBlockDataAddTotalSequenceLength(builder, totalSequenceLength): builder.PrependUint32Slot(2, totalSequenceLength, 0)
@@ -245,4 +270,6 @@ def CalledBlockDataAddBaseModResults(builder, baseModResults): builder.PrependUO
 def CalledBlockDataAddStateData(builder, stateData): builder.PrependUOffsetTRelativeSlot(21, flatbuffers.number_types.UOffsetTFlags.py_type(stateData), 0)
 def CalledBlockDataStartStateDataVector(builder, numElems): return builder.StartVector(4, numElems, 4)
 def CalledBlockDataAddBarcodeResults(builder, barcodeResults): builder.PrependUOffsetTRelativeSlot(22, flatbuffers.number_types.UOffsetTFlags.py_type(barcodeResults), 0)
+def CalledBlockDataAddAlignmentResults(builder, alignmentResults): builder.PrependUOffsetTRelativeSlot(23, flatbuffers.number_types.UOffsetTFlags.py_type(alignmentResults), 0)
+def CalledBlockDataStartAlignmentResultsVector(builder, numElems): return builder.StartVector(4, numElems, 4)
 def CalledBlockDataEnd(builder): return builder.EndObject()

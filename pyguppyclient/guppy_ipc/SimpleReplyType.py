@@ -15,4 +15,8 @@ class SimpleReplyType(object):
     NONE_PENDING = 9
     BAD_REQUEST = 10
     BAD_REPLY = 11
+    INVALID_INDEX = 12
+    LOADING_INDEX = 13
+    INVALID_BED = 14
+    LOADING_BED = 15
 

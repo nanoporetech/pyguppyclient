@@ -13,44 +13,20 @@ variables:
     - apt-get update > /dev/null
     - apt-get install -y python3-pip > /dev/null
     - apt-get install -y --no-install-recommends ./guppy.deb > /dev/null
-    - python3 -m pip install -q -r requirements.txt -r development.txt
+    - python3 -m pip install ${PIP_OPTIONS} -q -r requirements.txt -r development.txt
     - python3 setup.py develop
   script:
     - guppy_basecall_server -p 5555 -c ${CONFIG}.cfg --post_out -l /tmp/log ${GUPPY_ARGS} &
     - sleep 15
     - make test
-    - guppy_basecaller -c ${CONFIG}.cfg -p 5555 -s . -i tests/reads/testdata/
+    - guppy_basecaller -r -c ${CONFIG}.cfg -p 5555 -s . -i tests/reads/testdata/
   tags:
     - nvidia-docker
 
-cpu:guppy:3.4.1:
+cpu:guppy:4.0.11:
   <<: *test
 
-cpu:guppy:3.4.5:
-  <<: *test
-
-cpu:guppy:3.5.2:
-  <<: *test
-
-cpu:guppy:3.6.0:
-  <<: *test
-
-gpu:guppy:3.4.1:
-  <<: *test
-  variables:
-    GUPPY_ARGS: "-x cuda:0"
-
-gpu:guppy:3.4.5:
-  <<: *test
-  variables:
-    GUPPY_ARGS: "-x cuda:0"
-
-gpu:guppy:3.5.2:
-  <<: *test
-  variables:
-    GUPPY_ARGS: "-x cuda:0"
-
-gpu:guppy:3.6.0:
+gpu:guppy:4.0.11:
   <<: *test
   variables:
     GUPPY_ARGS: "-x cuda:0"

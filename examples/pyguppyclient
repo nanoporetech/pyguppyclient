@@ -16,7 +16,7 @@ def process(read, called, lock):
     Example callback function for the Caller that writes fastq files
     """
     with lock:
-        write_fastq(read.read_id, called.seq, called.qual, sys.stdout)
+        write_fastq(read['metadata']['read_id'], called.seq, called.qual, sys.stdout)
 
 
 def main(args):

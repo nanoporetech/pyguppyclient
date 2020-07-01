@@ -30,7 +30,6 @@ class ClientTest(TestCase):
         """ test the client api without sending a read """
         self.client.get_statistics()
         self.client.get_configs()
-        self.client._load_config(self.config_hac)
 
     def test_read_without_state(self):
         """ test a read without state """
@@ -40,15 +39,16 @@ class ClientTest(TestCase):
 
     def test_read_with_state(self):
         """ test a read with state """
-        self.client._load_config(self.config_fast)
         self.client.pass_read(next(self.read_loader))
         time.sleep(1)
         self.client._get_called_read(state=True)
 
     def test_invalid_config(self):
         """ try and load in invalid config """
-        with self.assertRaises(ValueError):
-            self.client._load_config("not_a_config")
+        bad_client = GuppyBasecallerClient(config_name="not_a_config",
+                                           port=self.port)
+        with self.assertRaises(ConnectionError):
+            bad_client.connect()
 
 
 if __name__ == "__main__":
