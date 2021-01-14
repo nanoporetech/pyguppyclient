@@ -14,7 +14,7 @@ import pyguppyclient.guppy_ipc.RunlengthTraceData as RunlengthTraceData
 from pyguppyclient.guppy_ipc.ProtocolVersion import CreateProtocolVersion
 
 
-PROTO_VERSION = (2, 1, 0)
+PROTO_VERSION = (5, 0, 0)
 
 
 class Config:

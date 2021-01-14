@@ -139,7 +139,7 @@ class GuppyBasecallerClient(GuppyClientBase):
         Get the `CalledReadData` object back from the server
         """
         if len(self.read_cache) == 0:
-            reads, _ = self.pcl_client.get_completed_reads()
+            reads = self.pcl_client.get_completed_reads()
             self.read_cache.extend(reads)
 
         try:
