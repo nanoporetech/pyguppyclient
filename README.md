@@ -26,9 +26,9 @@ from pyguppyclient import GuppyBasecallerClient, yield_reads
 config = "dna_r9.4.1_450bps_fast"
 read_file = "reads.fast5"
 
-with GuppyBasecallerClient(config_name=config) as client:
+with GuppyBasecallerClient(config_name=config, trace=True) as client:
     for read in yield_reads(read_file):
-        called = client.basecall(read, trace=True)
+        called = client.basecall(read)
         print(read.read_id, called.seq[:50], called.move)
 ```
 

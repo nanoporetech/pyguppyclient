@@ -2,10 +2,10 @@
 Guppy Client
 """
 
-from collections import deque
 import time
 import asyncio
 import logging
+from collections import deque
 
 import zmq
 import zmq.asyncio
@@ -26,7 +26,7 @@ class GuppyClientBase:
     """
     Blocking Guppy Base Client
     """
-    def __init__(self, config_name, host="localhost", port=5555, timeout=0.1, retries=50):
+    def __init__(self, config_name, host="localhost", port=5555, timeout=0.1, retries=50, state=False, trace=False):
         self.timeout = timeout
         self.retries = retries
         self.config_name = parse_config(config_name)
@@ -37,6 +37,8 @@ class GuppyClientBase:
         self.socket.connect("tcp://%s:%s" % (host, port))
         self.client_id = 0
         self.pcl_client = PCLClient("%s:%s" % (host, port), self.config_name)
+        self.pcl_client.set_params({'state_data_enabled': state})
+        self.pcl_client.set_params({'move_and_trace_enabled': trace})
         _init_pcl_client(self.pcl_client)
 
     def __enter__(self):
@@ -77,8 +79,9 @@ class GuppyClientBase:
             pass
         elif ret != result.success:
             raise ConnectionError(
-                "Connect with '{}' failed: {}".format(self.config_name,
-                                                      self.pcl_client.get_error_message())
+                "Connect with '{}' failed: {}".format(
+                    self.config_name, self.pcl_client.get_error_message()
+                )
             )
 
     def disconnect(self):
@@ -109,23 +112,19 @@ class GuppyBasecallerClient(GuppyClientBase):
     """
     Blocking Guppy Basecall Client
     """
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.read_cache = deque()
 
-    def basecall(self, read, state=False, trace=False):
+    def basecall(self, read):
         """
         Basecall a `ReadData` object and get a `CalledReadData` object
-
-        :param trace: flag for returning the flipflop trace table from the server.
-        :param state: flag for returning the state table (requires --post_out).
         """
         n = 0
         self.pass_read(read)
         while n < self.retries:
             n += 1
-            result = self._get_called_read(state=state, trace=trace)
+            result = self._get_called_read()
             if result is not None:
                 return result
             time.sleep(self.timeout)
@@ -134,7 +133,7 @@ class GuppyBasecallerClient(GuppyClientBase):
             "Basecall response not received after {}s for read '{}'".format(self.timeout, read.read_id)
         )
 
-    def _get_called_read(self, state=False, trace=False):
+    def _get_called_read(self):
         """
         Get the `CalledReadData` object back from the server
         """
@@ -221,7 +220,7 @@ class GuppyAsyncClientBase:
         }
         return await self.pcl_client.pass_read(read_dict)
 
-    async def get_called_read(self, trace=False, state=False):
+    async def get_called_read(self):
         """
         Get the `CalledReadData` object back from the server
         """

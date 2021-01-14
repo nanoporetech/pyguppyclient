@@ -16,7 +16,7 @@ class ClientTest(TestCase):
 
     def setUp(self):
         self.read_loader = yield_reads(self.read_file)
-        self.client = GuppyBasecallerClient(config_name=self.config_fast, port=self.port)
+        self.client = GuppyBasecallerClient(config_name=self.config_fast, port=self.port, trace=True, state=True)
         self.client.connect()
 
     def tearDown(self):
@@ -35,18 +35,20 @@ class ClientTest(TestCase):
         """ test a read without state """
         self.client.pass_read(next(self.read_loader))
         time.sleep(1)
-        self.client._get_called_read(state=False)
+        self.client._get_called_read()
 
     def test_read_with_state(self):
         """ test a read with state """
         self.client.pass_read(next(self.read_loader))
         time.sleep(1)
-        self.client._get_called_read(state=True)
+        res, called = self.client._get_called_read()
+        self.assertTrue(called.state is not None)
+        self.assertTrue(called.trace is not None)
+        self.assertTrue(called.move is not None)
 
     def test_invalid_config(self):
         """ try and load in invalid config """
-        bad_client = GuppyBasecallerClient(config_name="not_a_config",
-                                           port=self.port)
+        bad_client = GuppyBasecallerClient(config_name="not_a_config", port=self.port)
         with self.assertRaises(ConnectionError):
             bad_client.connect()
 
