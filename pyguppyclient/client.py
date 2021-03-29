@@ -30,13 +30,14 @@ class GuppyClientBase:
         self.timeout = timeout
         self.retries = retries
         self.config_name = parse_config(config_name)
+        self.address = "%s:%s" % (host, port)
         self.context = Context()
         self.socket = self.context.socket(REQ)
         self.socket.set(LINGER, 0)
         self.socket.set(RCVTIMEO, 100)
-        self.socket.connect("tcp://%s:%s" % (host, port))
+        self.socket.connect("tcp://%s" % self.address)
         self.client_id = 0
-        self.pcl_client = PCLClient("%s:%s" % (host, port), self.config_name)
+        self.pcl_client = PCLClient(self.address, self.config_name)
         self.pcl_client.set_params({'state_data_enabled': state})
         self.pcl_client.set_params({'move_and_trace_enabled': trace})
         _init_pcl_client(self.pcl_client)
@@ -73,7 +74,6 @@ class GuppyClientBase:
 
     def connect(self):
         result = self.pcl_client.result
-        self.pcl_client.clear_error_state()
         ret = self.pcl_client.connect()
         if ret == result.already_connected:
             pass
@@ -95,7 +95,7 @@ class GuppyClientBase:
         return [res.Configs(i) for i in range(res.ConfigsLength())]
 
     def get_statistics(self):
-        return self.send(SimpleRequestType.GET_STATISTICS)
+        return self.pcl_client.get_server_stats(self.address, 5)
 
     def pass_read(self, read):
         read_dict = {
@@ -189,7 +189,6 @@ class GuppyAsyncClientBase:
 
     async def connect(self, config):
         result = self.pcl_client.result
-        await self.pcl_client.clear_error_state()
         ret = await self.pcl_client.connect()
         if ret == result.already_connected:
             pass
@@ -207,7 +206,7 @@ class GuppyAsyncClientBase:
         return [res.Configs(i) for i in range(res.ConfigsLength())]
 
     async def get_statistics(self):
-        stats = await self.send(SimpleRequestType.GET_STATISTICS)
+        stats = await self.pcl_client.get_server_stats(self.address, 5)
         return stats
 
     async def pass_read(self, read):
