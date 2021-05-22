@@ -26,7 +26,7 @@ variables:
 cpu:guppy:4.5.2:
   <<: *test
 
-gpu:guppy:4.5.2:
+gpu:guppy:5.0.7:
   <<: *test
   variables:
     GUPPY_ARGS: "-x cuda:0"

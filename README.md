@@ -10,7 +10,7 @@ $ pip install pyguppyclient
 
 ## Requirements
 
-Guppy 4.4 or later is required and the `guppy_basecall_server` must already be running.
+Guppy 5.0 or later is required and the `guppy_basecall_server` must already be running.
 
 ```bash
 $ guppy_basecall_server --config dna_r9.4.1_450bps_fast.cfg -p 5555 -l /tmp/guppy -x 'cuda:0'

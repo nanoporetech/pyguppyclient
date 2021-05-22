@@ -2,7 +2,7 @@ CONFIG      ?= dna_r9.4.1_450bps_fast
 CORECPPDIR  ?= ../ont_core_cpp
 TESTDATAURL ?= https://nanoporetech.box.com/shared/static/hpeyme4posfzmc0hcxh0nl5tiuzjfbzf.gz
 TESTDATADIR ?= tests/reads
-DATADIR     ?= $(TESTDATADIR)/testdata/
+DATADIR     ?= $(TESTDATADIR)/testdata
 
 tests/reads:
 	mkdir -p $(TESTDATADIR)
