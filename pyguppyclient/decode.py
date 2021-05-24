@@ -157,7 +157,7 @@ def pcl_called_read(pcl_read):
     mod_probs = datasets.get('base_mod_probs')
     mod_alpha = None
     long_names = None
-    if mod_probs:
+    if mod_probs is not None:
         mod_probs = mod_probs * (1.0 / 255.0)
         mod_alpha = metadata.get('base_mod_alphabet')
         long_names = metadata.get('base_mod_long_names')
