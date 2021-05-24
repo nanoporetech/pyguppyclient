@@ -23,7 +23,7 @@ variables:
   tags:
     - nvidia-docker
 
-cpu:guppy:4.5.2:
+cpu:guppy:5.0.7:
   <<: *test
 
 gpu:guppy:5.0.7:
