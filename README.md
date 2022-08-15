@@ -1,3 +1,5 @@
+## Deprecated - see [ont-pyguppy-client-lib](https://pypi.org/project/ont-pyguppy-client-lib/).
+
 # pyguppyclient
 
 [![PyPI version](https://badge.fury.io/py/pyguppyclient.svg)](https://badge.fury.io/py/pyguppyclient)
